@@ -33,7 +33,33 @@
     These will be added once verified rather than estimated.
   -->
 
-  <!-- Main reference frame for LionBot -->
+  <!-- ========================================================= -->
+  <!-- Robot reference frames                                    -->
+  <!-- ========================================================= -->
+
+  <!--
+    base_footprint is the ground-level reference frame.
+    It has no physical geometry.
+  -->
+  <link name="base_footprint"/>
+
+  <!--
+    base_link is the main body reference frame.
+    Physical chassis geometry will be added once its height
+    and exact vertical position have been verified.
+  -->
   <link name="base_link"/>
+
+  <!--
+    Connect base_footprint to base_link.
+
+    The measured ground clearance is currently used as the
+    vertical offset. This places base_link 3.1 cm above the ground.
+  -->
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${ground_clearance}" rpy="0 0 0"/>
+  </joint>
 
 </robot>
