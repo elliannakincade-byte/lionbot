@@ -1,6 +1,6 @@
 # LionBot Senior Design Project
 
-LionBot is a mobile robotics senior design project using ROS 2 for robot control, mapping, and autonomous navigation.
+LionBot is a tracked mobile robotics senior design project using ROS 2 for robot control, mapping, and autonomous navigation.
 
 ## Current System
 
@@ -8,73 +8,159 @@ LionBot is a mobile robotics senior design project using ROS 2 for robot control
 - Ubuntu Server 24.04 LTS
 - ROS 2 Jazzy
 - ROS 2 workspace: `~/dev_ws`
+- Tracked / skid-steer drive platform
+- Arduino planned for low-level motor and encoder control
+- RPLIDAR A1 planned for laser scanning
 
 ## ROS 2 Packages
 
 ### lionbot_description
+
 Contains the physical robot description and TF setup.
 
 Current status:
-- Base robot frame (`base_link`) created
 - Xacro/URDF structure created
+- Measured LionBot dimensions added as Xacro properties
+- `base_footprint` and `base_link` frames created
+- Fixed `base_footprint -> base_link` transform established
 - `robot_state_publisher` configured and tested
-- Robot description successfully published to ROS 2
+- Robot description and static TF successfully published
+- Physical chassis geometry will be added after remaining dimensions are verified
 
 ### lionbot_bringup
-Provides the main launch system for LionBot.
+
+Provides the launch and configuration system for LionBot.
 
 Current status:
 - Main `lionbot.launch.py` created
-- Automatically launches `lionbot_description`
-- Launch and configuration directory structure created
-- Package dependencies configured
+- Main launch automatically starts `lionbot_description`
+- Dedicated `slam.launch.py` created
+- LionBot-specific `slam.yaml` created
+- Launch and configuration files install correctly with the package
+- ROS package dependencies configured
+- Workspace dependencies verified with `rosdep`
 
-## Navigation Software
+## SLAM
 
-The following ROS 2 packages are installed and available:
+SLAM Toolbox is installed and configured for LionBot.
 
-- SLAM Toolbox
-- Navigation2 (Nav2)
+Current configuration uses:
 
-These will be configured after the required sensor and drive data are available.
+- Map frame: `map`
+- Odometry frame: `odom`
+- Robot base frame: `base_footprint`
+- Laser scan topic: `/scan`
+- Mapping mode
+- Real system time rather than simulation time
+
+The SLAM configuration and launch files have been validated, but SLAM has not yet been run on the physical robot because LiDAR data and drive odometry are not currently available.
+
+Hardware-dependent SLAM parameters will be tuned only after real `/scan` and odometry data are available.
+
+## Navigation2
+
+Navigation2 (Nav2) is installed and available.
+
+The ROS 2 Jazzy default Nav2 configuration has been reviewed. Final LionBot Nav2 configuration has intentionally not been created yet because parameters such as robot footprint, velocity limits, acceleration limits, obstacle ranges, and controller behavior require physical drive testing and odometry.
+
+## RPLIDAR
+
+The ROS 2 Jazzy `rplidar_ros` driver is installed.
+
+Planned sensor:
+- RPLIDAR A1
+- Expected ROS scan topic: `/scan`
+
+The physical LiDAR has not yet been tested with the current Raspberry Pi setup. Its USB device path, permissions, frame configuration, and actual scan data will be verified when the sensor is available.
+
+## Arduino and Drive System
+
+The Raspberry Pi will perform high-level ROS 2 processing while the Arduino will provide the low-level interface to the motors and encoders.
+
+Planned data flow:
+
+```text
+ROS 2 / Nav2
+      |
+      v
+Raspberry Pi 5
+      |
+   USB Serial
+      |
+      v
+   Arduino
+    /    \
+Motors  Encoders
+```
+
+ROS 2 `serial_driver` is installed on the Raspberry Pi in preparation for USB serial communication.
+
+The actual serial protocol, baud rate, motor commands, encoder format, and drive-control parameters will be defined and tested when the Arduino, motors, and encoders are available.
 
 ## Planned Integration
 
-Future development will include:
+Remaining major integration steps:
 
-1. Add actual robot dimensions to the URDF/Xacro model.
-2. Integrate the Arduino and motor control system.
-3. Obtain wheel encoder data and generate odometry.
-4. Integrate the RPLIDAR and publish `/scan`.
-5. Configure SLAM Toolbox for map creation.
-6. Configure Nav2 for autonomous navigation.
+1. Verify remaining physical robot measurements.
+2. Add final chassis and sensor geometry to the URDF/Xacro model.
+3. Connect and test the Arduino over USB serial.
+4. Integrate motor control and encoder feedback.
+5. Generate and verify `odom -> base_footprint`.
+6. Connect and test the RPLIDAR A1.
+7. Verify `/scan` and LiDAR TF.
+8. Run and tune SLAM Toolbox using real sensor and odometry data.
+9. Create and tune the LionBot Nav2 configuration.
+10. Test autonomous navigation on the physical robot.
 
 ## Current ROS Architecture
 
 ```text
-                     Raspberry Pi 5
-                           |
-                     ROS 2 Jazzy
-                           |
-                 lionbot_bringup
-                           |
-                  lionbot_description
-                           |
-                       base_link
-                           |
-              +------------+------------+
-              |                         |
-         Drive System                RPLIDAR
-          (planned)                  (planned)
-              |                         |
-          Odometry                   /scan
-              |                         |
-              +------------+------------+
-                           |
-                      SLAM Toolbox
-                           |
-                          Map
-                           |
-                          Nav2
-                           |
-                Autonomous Navigation
+                         Raspberry Pi 5
+                               |
+                          ROS 2 Jazzy
+                               |
+                       lionbot_bringup
+                         /           \
+                        /             \
+             lionbot_description    SLAM Toolbox
+                     |                    ^
+                     |                    |
+              base_footprint              |
+                     |                    |
+                 base_link                |
+                                          |
+                    +---------------------+---------------------+
+                    |                                           |
+             Drive / Odometry                              RPLIDAR A1
+                (planned)                                   (planned)
+                    |                                           |
+              Arduino + Encoders                            /scan
+                    |                                           |
+                    +---------------------+---------------------+
+                                          |
+                                         Map
+                                          |
+                                         Nav2
+                                          |
+                               Autonomous Navigation
+```
+
+## Current Development Status
+
+The Raspberry Pi ROS 2 software foundation is operational and builds successfully.
+
+Completed software preparation includes:
+
+- ROS 2 Jazzy environment
+- LionBot description package
+- LionBot bringup package
+- Measured dimension properties
+- Initial TF structure
+- SLAM Toolbox installation and LionBot configuration
+- Nav2 installation
+- RPLIDAR ROS driver installation
+- ROS 2 serial communication library installation
+- Git/GitHub version control
+- ROS dependency verification
+
+Further development now primarily depends on physical integration and testing of the drive system, encoders, Arduino, and LiDAR.
