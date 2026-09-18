@@ -1,6 +1,39 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="lionbot">
 
+  <!-- ========================================================= -->
+  <!-- LionBot measured dimensions                               -->
+  <!-- All dimensions are in meters                              -->
+  <!-- Coordinate convention: X forward, Y left, Z up            -->
+  <!-- ========================================================= -->
+
+  <!-- Chassis -->
+  <xacro:property name="chassis_length" value="0.455"/>
+  <xacro:property name="chassis_width" value="0.300"/>
+  <xacro:property name="ground_clearance" value="0.031"/>
+
+  <!-- Tracks -->
+  <xacro:property name="track_width" value="0.054"/>
+  <xacro:property name="track_length" value="0.435"/>
+  <xacro:property name="track_contact_length" value="0.360"/>
+  <xacro:property name="track_separation" value="0.370"/>
+
+  <!-- Drive system -->
+  <xacro:property name="drive_sprocket_diameter" value="0.065"/>
+  <xacro:property name="drive_shaft_height" value="0.050"/>
+  <xacro:property name="drive_shaft_diameter" value="0.006"/>
+
+  <!--
+    Measurements intentionally NOT modeled yet:
+      - Chassis/body height: needs verification
+      - Motor position: motors are not currently available
+      - Encoder geometry: encoders are not currently available
+      - LiDAR X/Y position: needs measurement/reference point
+
+    These will be added once verified rather than estimated.
+  -->
+
+  <!-- Main reference frame for LionBot -->
   <link name="base_link"/>
 
 </robot>
