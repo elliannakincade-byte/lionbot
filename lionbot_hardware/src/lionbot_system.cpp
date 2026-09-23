@@ -53,9 +53,7 @@ hardware_interface::CallbackReturn LionBotSystemHardware::on_configure(
     const std::string response =
       arduino_.transact("STATUS");
 
-    if (
-      response != "STATUS,OK,TEST_STOPPED" &&
-      response != "STATUS,OK,TEST_RUNNING")
+    if (response.rfind("STATUS,OK,", 0) != 0)
     {
       RCLCPP_ERROR(
         rclcpp::get_logger("LionBotSystemHardware"),
@@ -71,6 +69,11 @@ hardware_interface::CallbackReturn LionBotSystemHardware::on_configure(
       rclcpp::get_logger("LionBotSystemHardware"),
       "Connected to LionBot Arduino on %s",
       serial_port_.c_str());
+
+    RCLCPP_INFO(
+      rclcpp::get_logger("LionBotSystemHardware"),
+      "Arduino reported: %s",
+      response.c_str());
   }
   catch (const std::exception & error)
   {
@@ -90,7 +93,11 @@ hardware_interface::CallbackReturn LionBotSystemHardware::on_cleanup(
 {
   try
   {
-    arduino_.disconnect();
+    if (arduino_.connected())
+    {
+      arduino_.transact("DISARM");
+      arduino_.disconnect();
+    }
   }
   catch (const std::exception & error)
   {
@@ -131,6 +138,23 @@ hardware_interface::CallbackReturn LionBotSystemHardware::on_activate(
 hardware_interface::CallbackReturn LionBotSystemHardware::on_deactivate(
   const rclcpp_lifecycle::State &)
 {
+  try
+  {
+    if (arduino_.connected())
+    {
+      arduino_.transact("DISARM");
+    }
+  }
+  catch (const std::exception & error)
+  {
+    RCLCPP_ERROR(
+      rclcpp::get_logger("LionBotSystemHardware"),
+      "Failed to disarm Arduino: %s",
+      error.what());
+
+    return hardware_interface::CallbackReturn::ERROR;
+  }
+
   RCLCPP_INFO(
     rclcpp::get_logger("LionBotSystemHardware"),
     "LionBot hardware interface deactivated");
@@ -142,7 +166,7 @@ hardware_interface::return_type LionBotSystemHardware::read(
   const rclcpp::Time &,
   const rclcpp::Duration &)
 {
-  // Real encoder feedback will be added when the encoders arrive.
+  // Encoder feedback will be implemented when the encoders arrive.
   return hardware_interface::return_type::OK;
 }
 
@@ -150,8 +174,8 @@ hardware_interface::return_type LionBotSystemHardware::write(
   const rclcpp::Time &,
   const rclcpp::Duration &)
 {
-  // Real motor commands remain disabled until the MDDS30
-  // control mode and drive hardware are verified.
+  // Real drive commands will be implemented after the motor
+  // hardware and encoder feedback are fully verified.
   return hardware_interface::return_type::OK;
 }
 
