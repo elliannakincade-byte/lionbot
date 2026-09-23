@@ -26,9 +26,9 @@
   <!--
     Measurements intentionally NOT modeled yet:
       - Chassis/body height: needs verification
-      - Motor position: motors are not currently available
+      - Exact drive joint positions: need verification
       - Encoder geometry: encoders are not currently available
-      - LiDAR X/Y position: needs measurement/reference point
+      - LiDAR X/Y position: needs final verified reference point
 
     These will be added once verified rather than estimated.
   -->
@@ -61,5 +61,23 @@
     <child link="base_link"/>
     <origin xyz="0 0 ${ground_clearance}" rpy="0 0 0"/>
   </joint>
+
+  <!-- ========================================================= -->
+  <!-- ros2_control hardware                                     -->
+  <!-- ========================================================= -->
+
+  <!--
+    This currently declares only the Raspberry Pi-to-Arduino
+    hardware connection.
+
+    Drive joints and encoder interfaces will be added after the
+    physical drive and encoder hardware are fully verified.
+  -->
+  <ros2_control name="LionBotSystem" type="system">
+    <hardware>
+      <plugin>lionbot_hardware/LionBotSystemHardware</plugin>
+      <param name="serial_port">/dev/ttyACM0</param>
+    </hardware>
+  </ros2_control>
 
 </robot>
