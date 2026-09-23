@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import serial
-import time
 import sys
+import time
 
 PORT = "/dev/ttyACM0"
 BAUD = 115200
-PING_COUNT = 100
+DRIVE_COUNT = 100
 
 
 def send_command(ser, command, expected, timeout=1.0):
@@ -23,12 +23,16 @@ def send_command(ser, command, expected, timeout=1.0):
         if not response:
             continue
 
-        if response == expected:
-            return True, response, time.monotonic() - start
+        elapsed = time.monotonic() - start
 
-        return False, response, time.monotonic() - start
+        return response == expected, response, elapsed
 
     return False, "TIMEOUT", time.monotonic() - start
+
+
+def fail(message):
+    print(f"FAIL: {message}")
+    return 1
 
 
 def main():
@@ -39,80 +43,160 @@ def main():
             time.sleep(2)
             ser.reset_input_buffer()
 
-            print("Starting simulated robot action...")
+            print("Checking communication...")
 
             ok, response, _ = send_command(
                 ser,
-                "START_TEST",
-                "TEST_STARTED"
+                "PING",
+                "PONG"
             )
 
             if not ok:
-                print(f"FAIL: START_TEST returned: {response}")
-                return 1
+                return fail(f"PING returned {response}")
 
-            print("TEST_STARTED received.")
-            print(f"Sending {PING_COUNT} PING commands...")
-
-            successful_pings = 0
-            latencies = []
-
-            for i in range(1, PING_COUNT + 1):
-                ok, response, latency = send_command(
-                    ser,
-                    "PING",
-                    "PONG"
-                )
-
-                if not ok:
-                    print(
-                        f"FAIL at PING {i}: "
-                        f"expected PONG, received {response}"
-                    )
-                    return 1
-
-                successful_pings += 1
-                latencies.append(latency)
-
-                if i % 10 == 0:
-                    ok, response, _ = send_command(
-                        ser,
-                        "STATUS",
-                        "STATUS,OK,TEST_RUNNING"
-                    )
-
-                    if not ok:
-                        print(
-                            f"FAIL after PING {i}: "
-                            f"STATUS returned {response}"
-                        )
-                        return 1
-
-                    print(f"  {i}/{PING_COUNT} PINGs passed")
-
-                time.sleep(0.05)
-
-            print("Stopping simulated robot action...")
-
-            ok, response, _ = send_command(
-                ser,
-                "STOP_TEST",
-                "TEST_STOPPED"
-            )
-
-            if not ok:
-                print(f"FAIL: STOP_TEST returned: {response}")
-                return 1
+            print("PING: PASS")
 
             ok, response, _ = send_command(
                 ser,
                 "STATUS",
-                "STATUS,OK,TEST_STOPPED"
+                "STATUS,OK,DISARMED,0,0"
             )
 
             if not ok:
-                print(f"FAIL: final STATUS returned: {response}")
-                return 1
+                return fail(f"Initial STATUS returned {response}")
+
+            print("Initial safe state: PASS")
+
+            print("Checking drive rejection while disarmed...")
+
+            ok, response, _ = send_command(
+                ser,
+                "DRIVE,0,0",
+                "ERROR,NOT_ARMED"
+            )
+
+            if not ok:
+                return fail(
+                    f"Disarmed DRIVE returned {response}"
+                )
+
+            print("Disarmed DRIVE rejection: PASS")
+
+            print("Arming Arduino...")
+
+            ok, response, _ = send_command(
+                ser,
+                "ARM",
+                "ARMED"
+            )
+
+            if not ok:
+                return fail(f"ARM returned {response}")
+
+            print("ARM: PASS")
+
+            print(
+                f"Sending {DRIVE_COUNT} zero-drive commands..."
+            )
+
+            latencies = []
+
+            for i in range(1, DRIVE_COUNT + 1):
+                ok, response, latency = send_command(
+                    ser,
+                    "DRIVE,0,0",
+                    "DRIVE_OK,0,0"
+                )
+
+                if not ok:
+                    return fail(
+                        f"DRIVE {i} returned {response}"
+                    )
+
+                latencies.append(latency)
+
+                if i % 10 == 0:
+                    print(
+                        f"  {i}/{DRIVE_COUNT} "
+                        "zero-drive commands passed"
+                    )
+
+                time.sleep(0.05)
+
+            print("Checking malformed command rejection...")
+
+            ok, response, _ = send_command(
+                ser,
+                "DRIVE,0",
+                "ERROR,BAD_DRIVE_COMMAND"
+            )
+
+            if not ok:
+                return fail(
+                    f"Malformed DRIVE returned {response}"
+                )
+
+            print("Malformed DRIVE rejection: PASS")
+
+            # Refresh the valid-drive watchdog before the next test.
+            ok, response, _ = send_command(
+                ser,
+                "DRIVE,0,0",
+                "DRIVE_OK,0,0"
+            )
+
+            if not ok:
+                return fail(
+                    f"Watchdog refresh returned {response}"
+                )
+
+            print("Checking out-of-range rejection...")
+
+            ok, response, _ = send_command(
+                ser,
+                "DRIVE,101,0",
+                "ERROR,OUT_OF_RANGE"
+            )
+
+            if not ok:
+                return fail(
+                    f"Out-of-range DRIVE returned {response}"
+                )
+
+            print("Out-of-range DRIVE rejection: PASS")
+
+            ok, response, _ = send_command(
+                ser,
+                "STOP",
+                "STOPPED"
+            )
+
+            if not ok:
+                return fail(f"STOP returned {response}")
+
+            print("STOP: PASS")
+
+            ok, response, _ = send_command(
+                ser,
+                "DISARM",
+                "DISARMED"
+            )
+
+            if not ok:
+                return fail(f"DISARM returned {response}")
+
+            print("DISARM: PASS")
+
+            ok, response, _ = send_command(
+                ser,
+                "STATUS",
+                "STATUS,OK,DISARMED,0,0"
+            )
+
+            if not ok:
+                return fail(
+                    f"Final STATUS returned {response}"
+                )
 
             average_latency_ms = (
                 sum(latencies) / len(latencies)
@@ -121,17 +205,34 @@ def main():
             maximum_latency_ms = max(latencies) * 1000
 
             print()
-            print("========== LIONBOT SERIAL TEST ==========")
-            print(f"PINGs passed:    {successful_pings}/{PING_COUNT}")
-            print(f"Failures:        0")
-            print(f"Average latency: {average_latency_ms:.1f} ms")
-            print(f"Maximum latency: {maximum_latency_ms:.1f} ms")
-            print("Start command:   PASS")
-            print("Running status:  PASS")
-            print("Stop command:    PASS")
-            print("Final status:    PASS")
-            print("RESULT:          PASS")
-            print("=========================================")
+            print(
+                "======= LIONBOT SERIAL PROTOCOL TEST ======="
+            )
+            print(
+                f"Zero-drive commands: {DRIVE_COUNT}/{DRIVE_COUNT}"
+            )
+            print("Failures:            0")
+            print(
+                f"Average latency:     "
+                f"{average_latency_ms:.1f} ms"
+            )
+            print(
+                f"Maximum latency:     "
+                f"{maximum_latency_ms:.1f} ms"
+            )
+            print("PING:                PASS")
+            print("Safe startup:        PASS")
+            print("Disarmed protection: PASS")
+            print("ARM:                 PASS")
+            print("Malformed rejection: PASS")
+            print("Range protection:    PASS")
+            print("STOP:                PASS")
+            print("DISARM:              PASS")
+            print("Final safe state:    PASS")
+            print("RESULT:              PASS")
+            print(
+                "============================================"
+            )
 
             return 0
 
