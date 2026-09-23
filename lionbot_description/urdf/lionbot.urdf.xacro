@@ -76,7 +76,7 @@
   <ros2_control name="LionBotSystem" type="system">
     <hardware>
       <plugin>lionbot_hardware/LionBotSystemHardware</plugin>
-      <param name="serial_port">/dev/ttyACM0</param>
+      <param name="serial_port">/dev/serial/by-id/usb-Arduino_UNO_R4_Minima_38020C2B363136372B0C33334B572F2B-if00</param>
     </hardware>
   </ros2_control>
 
