@@ -28,6 +28,28 @@ target_link_libraries(lionbot_arduino_comms
   ${LIBSERIAL_LIBRARY}
 )
 
+add_library(lionbot_system SHARED
+  src/lionbot_system.cpp
+)
+
+target_compile_features(lionbot_system PUBLIC cxx_std_17)
+
+target_include_directories(lionbot_system PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
+ament_target_dependencies(lionbot_system
+  hardware_interface
+  pluginlib
+  rclcpp
+  rclcpp_lifecycle
+)
+
+target_link_libraries(lionbot_system
+  lionbot_arduino_comms
+)
+
 add_executable(arduino_link_test
   src/arduino_link_test.cpp
 )
@@ -38,6 +60,11 @@ target_link_libraries(arduino_link_test
   lionbot_arduino_comms
 )
 
+pluginlib_export_plugin_description_file(
+  hardware_interface
+  lionbot_hardware.xml
+)
+
 install(
   DIRECTORY include/
   DESTINATION include
@@ -46,6 +73,7 @@ install(
 install(
   TARGETS
     lionbot_arduino_comms
+    lionbot_system
     arduino_link_test
   EXPORT export_lionbot_hardware
   ARCHIVE DESTINATION lib
@@ -53,7 +81,18 @@ install(
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 
-ament_export_targets(export_lionbot_hardware HAS_LIBRARY_TARGET)
+ament_export_targets(
+  export_lionbot_hardware
+  HAS_LIBRARY_TARGET
+)
+
+ament_export_dependencies(
+  hardware_interface
+  pluginlib
+  rclcpp
+  rclcpp_lifecycle
+)
+
 ament_export_include_directories(include)
 
 if(BUILD_TESTING)

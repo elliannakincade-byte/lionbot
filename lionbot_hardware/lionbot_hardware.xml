@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<library path="lionbot_system">
+  <class
+    name="lionbot_hardware/LionBotSystemHardware"
+    type="lionbot_hardware::LionBotSystemHardware"
+    base_class_type="hardware_interface::SystemInterface">
+    <description>
+      ROS 2 control hardware interface for the LionBot tracked mobile robot.
+    </description>
+  </class>
+</library>
