@@ -37,10 +37,10 @@ slam_toolbox:
     restamp_tf: false
 
     # Laser parameters
-    # These remain at Jazzy defaults until the physical
-    # RPLIDAR A1 is tested on LionBot.
-    min_laser_range: 0.0
-    max_laser_range: 20.0
+# RPLIDAR A1 measured scan limits from LionBot testing.
+# Actual /scan reported range_min = 0.15 m and range_max = 12.0 m.
+    min_laser_range: 0.15
+    max_laser_range: 12.0
 
     minimum_time_interval: 0.5
     transform_timeout: 0.2

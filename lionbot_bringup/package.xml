@@ -24,8 +24,12 @@
   <!-- ros2_control -->
   <exec_depend>controller_manager</exec_depend>
 
-  <!-- Mapping -->
+  <!-- LiDAR and mapping -->
+  <exec_depend>rplidar_ros</exec_depend>
   <exec_depend>slam_toolbox</exec_depend>
+
+  <!-- Navigation -->
+  <exec_depend>nav2_bringup</exec_depend>
 
   <!-- Testing -->
   <test_depend>ament_copyright</test_depend>
