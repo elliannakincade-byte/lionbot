@@ -23,43 +23,62 @@
   <xacro:property name="drive_shaft_height" value="0.050"/>
   <xacro:property name="drive_shaft_diameter" value="0.006"/>
 
-  <!--
-    Measurements intentionally NOT modeled yet:
-      - Chassis/body height: needs verification
-      - Exact drive joint positions: need verification
-      - Encoder geometry: encoders are not currently available
-      - LiDAR X/Y position: needs final verified reference point
+  <!-- Encoder calibration -->
+  <xacro:property name="left_counts_per_rev" value="3303.0"/>
+  <xacro:property name="right_counts_per_rev" value="3241.0"/>
 
-    These will be added once verified rather than estimated.
+  <!--
+    Notes:
+      - Drive joints below are logical joints used by ros2_control.
+      - They represent the left and right tracked drivetrain sides.
+      - Exact visual sprocket/track geometry is not required for odometry.
+      - Encoder counts/revolution are initial measured calibration values
+        and will be refined during floor odometry testing.
   -->
 
   <!-- ========================================================= -->
   <!-- Robot reference frames                                    -->
   <!-- ========================================================= -->
 
-  <!--
-    base_footprint is the ground-level reference frame.
-    It has no physical geometry.
-  -->
   <link name="base_footprint"/>
 
-  <!--
-    base_link is the main body reference frame.
-    Physical chassis geometry will be added once its height
-    and exact vertical position have been verified.
-  -->
   <link name="base_link"/>
 
-  <!--
-    Connect base_footprint to base_link.
-
-    The measured ground clearance is currently used as the
-    vertical offset. This places base_link 3.1 cm above the ground.
-  -->
   <joint name="base_footprint_joint" type="fixed">
     <parent link="base_footprint"/>
     <child link="base_link"/>
     <origin xyz="0 0 ${ground_clearance}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ========================================================= -->
+  <!-- Logical drivetrain joints                                 -->
+  <!-- ========================================================= -->
+
+  <!--
+    These links/joints represent the two tracked drivetrain sides
+    for ros2_control and differential-drive odometry.
+
+    Their transforms are logical references only. The actual
+    differential-drive geometry is configured using the measured
+    track separation and drive sprocket radius.
+  -->
+
+  <link name="left_drive_link"/>
+
+  <joint name="left_drive_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="left_drive_link"/>
+    <origin xyz="0 ${track_separation / 2.0} 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+
+  <link name="right_drive_link"/>
+
+  <joint name="right_drive_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="right_drive_link"/>
+    <origin xyz="0 ${-track_separation / 2.0} 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
   </joint>
 
   <!-- ========================================================= -->
@@ -74,32 +93,55 @@
       Y = +0.0350 m  (left)
       Z = +0.3640 m  (up)
 
-    LiDAR yaw is initially set to 0 and will be verified in RViz.
+    LiDAR yaw = +90 degrees, verified against the physical
+    robot orientation in RViz.
   -->
+
   <link name="laser"/>
 
   <joint name="laser_joint" type="fixed">
     <parent link="base_link"/>
     <child link="laser"/>
-    <origin xyz="0.0975 0.035 0.364" rpy="0 0 0"/>
+    <origin xyz="0.0975 0.035 0.364" rpy="0 0 1.5708"/>
   </joint>
 
   <!-- ========================================================= -->
   <!-- ros2_control hardware                                     -->
   <!-- ========================================================= -->
 
-  <!--
-    This currently declares only the Raspberry Pi-to-Arduino
-    hardware connection.
-
-    Drive joints and encoder interfaces will be added after the
-    physical drive and encoder hardware are fully verified.
-  -->
   <ros2_control name="LionBotSystem" type="system">
+
     <hardware>
       <plugin>lionbot_hardware/LionBotSystemHardware</plugin>
+
       <param name="serial_port">/dev/serial/by-id/usb-Arduino_UNO_R4_Minima_38020C2B363136372B0C33334B572F2B-if00</param>
+
+      <param name="left_counts_per_rev">${left_counts_per_rev}</param>
+      <param name="right_counts_per_rev">${right_counts_per_rev}</param>
     </hardware>
+
+    <!-- LEFT tracked drivetrain -->
+    <joint name="left_drive_joint">
+
+      <command_interface name="velocity"/>
+
+      <state_interface name="position"/>
+
+      <state_interface name="velocity"/>
+
+    </joint>
+
+    <!-- RIGHT tracked drivetrain -->
+    <joint name="right_drive_joint">
+
+      <command_interface name="velocity"/>
+
+      <state_interface name="position"/>
+
+      <state_interface name="velocity"/>
+
+    </joint>
+
   </ros2_control>
 
 </robot>

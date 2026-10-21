@@ -19,12 +19,26 @@ def generate_launch_description():
     serial_port = LaunchConfiguration('serial_port')
 
     # ---------------------------------------------------------
-    # Robot description / TF
+    # Package paths
     # ---------------------------------------------------------
 
     description_package = get_package_share_directory(
         'lionbot_description'
     )
+
+    bringup_package = get_package_share_directory(
+        'lionbot_bringup'
+    )
+
+    controllers_file = os.path.join(
+        bringup_package,
+        'config',
+        'controllers.yaml'
+    )
+
+    # ---------------------------------------------------------
+    # Robot description / TF
+    # ---------------------------------------------------------
 
     description_launch = os.path.join(
         description_package,
@@ -45,19 +59,45 @@ def generate_launch_description():
         executable='ros2_control_node',
         output='screen',
         parameters=[
-            {
-                'update_rate': 20
-            }
+            controllers_file,
         ]
+    )
+
+    # ---------------------------------------------------------
+    # Joint state broadcaster
+    # ---------------------------------------------------------
+
+    joint_state_broadcaster = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[
+            'joint_state_broadcaster',
+            '--controller-manager',
+            '/controller_manager',
+        ],
+        output='screen'
+    )
+
+    # ---------------------------------------------------------
+    # Differential drive controller
+    # ---------------------------------------------------------
+
+    diff_drive_controller = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=[
+            'diff_drive_controller',
+            '--controller-manager',
+            '/controller_manager',
+            '--param-file',
+            controllers_file,
+        ],
+        output='screen'
     )
 
     # ---------------------------------------------------------
     # RPLIDAR A1
     # ---------------------------------------------------------
-
-    bringup_package = get_package_share_directory(
-        'lionbot_bringup'
-    )
 
     lidar_launch = os.path.join(
         bringup_package,
@@ -93,5 +133,9 @@ def generate_launch_description():
 
         robot_description,
         controller_manager,
+
+        joint_state_broadcaster,
+        diff_drive_controller,
+
         lidar,
     ])
