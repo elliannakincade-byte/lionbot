@@ -91,6 +91,8 @@ def generate_launch_description():
             '/controller_manager',
             '--param-file',
             controllers_file,
+            '--controller-ros-args',
+            '--ros-args -r ~/cmd_vel:=/cmd_vel',
         ],
         output='screen'
     )

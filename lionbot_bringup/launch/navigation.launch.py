@@ -67,13 +67,13 @@ def generate_launch_description():
     nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(nav2_launch),
         launch_arguments={
-            'slam': 'false',
+            'slam': 'False',
             'map': map_yaml,
-            'use_sim_time': 'false',
+            'use_sim_time': 'False',
             'params_file': nav2_params,
-            'autostart': 'true',
-            'use_composition': 'false',
-            'use_localization': 'true',
+            'autostart': 'True',
+            'use_composition': 'False',
+            'use_localization': 'True',
         }.items()
     )
 

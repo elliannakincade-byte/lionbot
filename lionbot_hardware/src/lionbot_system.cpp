@@ -585,7 +585,7 @@ hardware_interface::return_type LionBotSystemHardware::write(
 
     const int right_command =
       velocityToArduinoCommand(
-        right_velocity_command);
+        -right_velocity_command);
 
 
     // --------------------------------------------------------

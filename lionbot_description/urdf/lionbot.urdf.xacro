@@ -24,8 +24,8 @@
   <xacro:property name="drive_shaft_diameter" value="0.006"/>
 
   <!-- Encoder calibration -->
-  <xacro:property name="left_counts_per_rev" value="3303.0"/>
-  <xacro:property name="right_counts_per_rev" value="3241.0"/>
+  <xacro:property name="left_counts_per_rev" value="2451.0"/>
+  <xacro:property name="right_counts_per_rev" value="2405.0"/>
 
   <!--
     Notes:

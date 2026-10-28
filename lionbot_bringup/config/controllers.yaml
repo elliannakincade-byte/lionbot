@@ -33,7 +33,7 @@ diff_drive_controller:
     enable_odom_tf: true
 
     # Initial calibration multipliers
-    wheel_separation_multiplier: 1.0
+    wheel_separation_multiplier: 1.66
     left_wheel_radius_multiplier: 1.0
     right_wheel_radius_multiplier: 1.0
 
